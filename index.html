@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Liquidity Engine</title>
+<style>body{font-family:system-ui;background:#0b1020;color:#e8edf7;margin:0}.wrap{max-width:1200px;margin:auto;padding:24px}.card{background:#121a2d;border:1px solid #26324b;border-radius:14px;padding:18px;margin:14px 0}.controls{display:flex;gap:10px;flex-wrap:wrap}input,button{padding:10px 12px;border-radius:9px;border:1px solid #34415f;background:#0e1628;color:#fff}button{cursor:pointer;font-weight:700}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #27334c;text-align:left}.good{font-weight:700}.muted{color:#9ba8bf}.pill{padding:3px 8px;border:1px solid #3b4969;border-radius:999px;display:inline-block;margin:2px}.flow{font-family:monospace;white-space:pre;overflow:auto;line-height:1.25}.err{color:#ffb4b4}</style></head><body><div class="wrap"><h1>BTC Liquidity Engine</h1><div class="card controls"><input id="symbol" value="BTCUSDT"><input id="threshold" type="number" min="0" max="100" value="60"><button onclick="run()">Analyze</button><span id="status" class="muted"></span></div>
+<div class="card"><div class="flow">H4 STRUCTURE
+      ↓
+H1 LIQUIDITY MAP
+      ↓
+EQH/EQL + PDH/PDL + Swing H/L + Volume Profile
+      ↓
+ZONE CLUSTER
+      ↓
+ZONE STRENGTH
+      ↓
+score ≥ threshold</div></div>
+<div id="summary" class="card">Loading…</div><div class="card"><h2>Liquidity Zones</h2><table><thead><tr><th>Rank</th><th>Type</th><th>Zone</th><th>Distance</th><th>Strength</th><th>Qualified</th><th>Evidence</th></tr></thead><tbody id="rows"></tbody></table></div><div class="card muted">This engine detects probable liquidity from market structure and OHLCV. It does not reproduce exchange-wide liquidation positions.</div></div>
+<script>const fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2}); async function run(){const s=document.getElementById('status');s.textContent='Analyzing…';try{let sym=document.getElementById('symbol').value;let th=document.getElementById('threshold').value;let r=await fetch(`/api/analyze?symbol=${encodeURIComponent(sym)}&threshold=${th}`);let d=await r.json();if(!r.ok)throw new Error(d.error||'API error');s.textContent='Updated';let h=d.h4_structure;document.getElementById('summary').innerHTML=`<h2>Market Context</h2><b>${d.symbol}</b> — Price: <b>${fmt(d.price)}</b><br>H4 Trend: <b>${h.trend}</b> | Structure: <b>${h.structure}</b> | BOS: <b>${h.bos}</b><br>H1 ATR: ${fmt(d.atr_h1)} | PDH: ${fmt(d.pdh)} | PDL: ${fmt(d.pdl)} | Threshold: ${d.threshold}`;document.getElementById('rows').innerHTML=d.zones.map((z,i)=>`<tr><td>${i+1}</td><td>${z.type}</td><td>${fmt(z.low)} – ${fmt(z.high)}</td><td>${z.distance_pct.toFixed(2)}%</td><td class="good">${z.strength}/100</td><td>${z.qualified?'YES':'NO'}</td><td>${z.evidence.map(x=>`<span class="pill">${x}</span>`).join('')}</td></tr>`).join('');}catch(e){s.innerHTML=`<span class="err">${e.message}</span>`}} run();</script></body></html>
